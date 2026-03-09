@@ -25,25 +25,11 @@ import SwiftUI
 struct ShopSenseApp: App {
     // Core Data persistence controller for managing shopping data
     let persistenceController = PersistenceController.shared
-    @State private var showLaunch = true
 
     var body: some Scene {
         WindowGroup {
-            Group {
-                if showLaunch {
-                    LaunchScreenView()
-                        .transition(.opacity)
-                } else {
-                    MainView()
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.35), value: showLaunch)
-            .task {
-                guard showLaunch else { return }
-                try? await Task.sleep(nanoseconds: 1_500_000_000)
-                showLaunch = false
-            }
+            // MainView serves as the root navigation container
+            MainView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }

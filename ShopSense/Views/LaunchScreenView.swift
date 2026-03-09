@@ -53,9 +53,9 @@ struct LaunchScreenView: View {
                         .foregroundColor(.white.opacity(0.7))
 
                     VStack(spacing: 4) {
-                        Text("Renan Yoshida Avelan - 101536279")
-                        Text("Lucas Tavares Criscuolo - 101500671")
-                        Text("Gustavo Miranda - 101488574")
+                        Text("Renan Yoshida Avelan")
+                        Text("Lucas Tavares Criscuolo")
+                        Text("Gustavo Miranda")
                     }
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.9))
