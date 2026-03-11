@@ -34,6 +34,7 @@ struct AddEditItemView: View {
     @State private var notes = ""
 
     @State private var showingValidationAlert = false
+    @State private var validationMessage = "Please enter an item name."
 
     private var isEditMode: Bool { item != nil }
 
@@ -126,11 +127,11 @@ struct AddEditItemView: View {
             .alert("Validation Error", isPresented: $showingValidationAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("Please enter an item name.")
+                Text(validationMessage)
             }
             .onAppear {
                 loadItemData()
-                CategoryDefaults.seedIfNeeded(in: viewContext)
+                createDefaultCategoriesIfNeeded()
             }
         }
     }
@@ -146,16 +147,51 @@ struct AddEditItemView: View {
         notes = item.notes ?? ""
     }
 
+    private func createDefaultCategoriesIfNeeded() {
+        guard categories.isEmpty else { return }
+
+        let defaults: [(name: String, color: String, icon: String, taxable: Bool)] = [
+            ("Food", "#4CAF50", "cart.fill", false),
+            ("Medication", "#F44336", "pills.fill", false),
+            ("Cleaning", "#2196F3", "sparkles", true),
+            ("Electronics", "#9C27B0", "bolt.fill", true),
+            ("Clothing", "#FF9800", "tshirt.fill", true),
+            ("Household", "#795548", "house.fill", true)
+        ]
+
+        for item in defaults {
+            let category = ProductCategory(context: viewContext)
+            category.id = UUID()
+            category.name = item.name
+            category.colorHex = item.color
+            category.iconName = item.icon
+            category.isTaxable = item.taxable
+        }
+
+        PersistenceController.shared.save()
+    }
+
     private func isCategoryTaxable(_ categoryName: String) -> Bool {
-        CategoryDefaults.isTaxable(
-            categoryName: categoryName,
-            categories: Array(categories)
-        )
+        let exemptCategories = ["Food", "Medication", "Basic Groceries", "Prescription Medication"]
+        return !exemptCategories.contains(categoryName)
     }
 
     private func saveItem() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else {
+            validationMessage = "Please enter an item name."
+            showingValidationAlert = true
+            return
+        }
+
+        guard price >= 0 else {
+            validationMessage = "Price cannot be negative."
+            showingValidationAlert = true
+            return
+        }
+
+        guard quantity > 0 else {
+            validationMessage = "Quantity must be at least 1."
             showingValidationAlert = true
             return
         }
