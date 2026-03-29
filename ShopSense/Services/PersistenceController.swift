@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: PersistenceController.swift
+//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
+//  Editors:
+//    - Gustavo Miranda (101488574): reviewed header compliance and persistence notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and default-category seeding notes.
+//  External/AI References: NOT USED
+//  Description: Core Data stack setup, save operations, and default category seeding.
+//
+
+//
 //  PersistenceController.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -107,5 +118,46 @@ struct PersistenceController {
                 print("Error saving context: \(nsError), \(nsError.userInfo)")
             }
         }
+    }
+}
+
+/// Shared source for default category definitions and seeding logic.
+enum CategoryDefaults {
+    static let definitions: [(name: String, color: String, icon: String, taxable: Bool)] = [
+        ("Food", "#4CAF50", "cart.fill", false),
+        ("Medication", "#F44336", "pills.fill", false),
+        ("Cleaning", "#2196F3", "sparkles", true),
+        ("Electronics", "#9C27B0", "bolt.fill", true),
+        ("Clothing", "#FF9800", "tshirt.fill", true),
+        ("Household", "#795548", "house.fill", true)
+    ]
+
+    static func seedIfNeeded(in context: NSManagedObjectContext) {
+        let request: NSFetchRequest<ProductCategory> = ProductCategory.fetchRequest()
+        request.fetchLimit = 1
+
+        do {
+            let existingCount = try context.count(for: request)
+            guard existingCount == 0 else { return }
+        } catch {
+            print("Error checking category seed state: \(error)")
+            return
+        }
+
+        for item in definitions {
+            let category = ProductCategory(context: context)
+            category.id = UUID()
+            category.name = item.name
+            category.colorHex = item.color
+            category.iconName = item.icon
+            category.isTaxable = item.taxable
+        }
+
+        PersistenceController.shared.save()
+    }
+
+    static func isTaxable(categoryName: String?, categories: [ProductCategory]) -> Bool {
+        guard let categoryName, !categoryName.isEmpty else { return true }
+        return categories.first(where: { $0.name == categoryName })?.isTaxable ?? true
     }
 }

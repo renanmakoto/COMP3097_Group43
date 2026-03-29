@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: LaunchScreenView.swift
+//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
+//  Editors:
+//    - Gustavo Miranda (101488574): reviewed header compliance and team-credit display notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and visual consistency notes.
+//  External/AI References: NOT USED
+//  Description: Branded launch screen that presents app identity and team members.
+//
+
+//
 //  LaunchScreenView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -53,9 +64,9 @@ struct LaunchScreenView: View {
                         .foregroundColor(.white.opacity(0.7))
 
                     VStack(spacing: 4) {
-                        Text("Renan Yoshida Avelan")
-                        Text("Lucas Tavares Criscuolo")
-                        Text("Gustavo Miranda")
+                        Text("Renan Yoshida Avelan - 101536279")
+                        Text("Lucas Tavares Criscuolo - 101500671")
+                        Text("Gustavo Miranda - 101488574")
                     }
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.9))

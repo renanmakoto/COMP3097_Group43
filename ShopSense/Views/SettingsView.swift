@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: SettingsView.swift
+//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
+//  Editors:
+//    - Gustavo Miranda (101488574): reviewed header compliance and reset-flow notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and province-setting/tax notes.
+//  External/AI References: NOT USED
+//  Description: Settings screen for province selection, data reset, and app/team information.
+//
+
+//
 //  SettingsView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -7,7 +18,7 @@
 //
 //
 //  Description: Settings screen for app preferences and information.
-//  Includes province selection, display options, and app information.
+//  Includes province selection, data reset, and app information.
 //
 
 import SwiftUI
@@ -16,8 +27,6 @@ import CoreData
 /// SettingsView provides app settings and information
 struct SettingsView: View {
     @AppStorage("selectedProvince") private var selectedProvince = "Ontario"
-    @AppStorage("showPurchasedItems") private var showPurchasedItems = true
-    @AppStorage("defaultBudget") private var defaultBudget: Double = 0
 
     @State private var showingResetAlert = false
     @State private var showingAboutSheet = false
@@ -42,25 +51,8 @@ struct SettingsView: View {
                     }
                 }
 
-                // Display Settings
-                Section("Display") {
-                    Toggle("Show Purchased Items", isOn: $showPurchasedItems)
-
-                    HStack {
-                        Text("Default Budget")
-                        Spacer()
-                        TextField("0", value: $defaultBudget, format: .currency(code: "CAD"))
-                            .multilineTextAlignment(.trailing)
-                            .keyboardType(.decimalPad)
-                    }
-                }
-
                 // Data Section
                 Section("Data") {
-                    Button("Export All Lists") {
-                        exportLists()
-                    }
-
                     Button("Reset All Data", role: .destructive) {
                         showingResetAlert = true
                     }
@@ -125,11 +117,6 @@ struct SettingsView: View {
         }
     }
 
-    private func exportLists() {
-        // Placeholder for export functionality
-        print("Export lists functionality")
-    }
-
     private func resetAllData() {
         let context = PersistenceController.shared.container.viewContext
 
@@ -143,6 +130,7 @@ struct SettingsView: View {
         let categoryDelete = NSBatchDeleteRequest(fetchRequest: categoryRequest)
 
         do {
+            // Use batch deletes to wipe large Core Data tables efficiently before reseeding defaults.
             try context.execute(listDelete)
             try context.execute(itemDelete)
             try context.execute(categoryDelete)
