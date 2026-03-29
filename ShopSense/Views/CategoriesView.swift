@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: CategoriesView.swift
+//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
+//  Editors:
+//    - Renan Yoshida Avelan (101536279): reviewed header compliance and category defaults notes.
+//    - Gustavo Miranda (101488574): reviewed header compliance and list-category integration notes.
+//  External/AI References: NOT USED
+//  Description: Category management for custom names, icons, colors, and taxable flags.
+//
+
+//
 //  CategoriesView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -52,7 +63,7 @@ struct CategoriesView: View {
                 AddEditCategoryView(category: category)
             }
             .onAppear {
-                createDefaultCategoriesIfNeeded()
+                CategoryDefaults.seedIfNeeded(in: viewContext)
             }
         }
     }
@@ -117,30 +128,6 @@ struct CategoriesView: View {
     }
 
     // MARK: - Methods
-
-    private func createDefaultCategoriesIfNeeded() {
-        guard categories.isEmpty else { return }
-
-        let defaults: [(name: String, color: String, icon: String, taxable: Bool)] = [
-            ("Food", "#4CAF50", "cart.fill", false),
-            ("Medication", "#F44336", "pills.fill", false),
-            ("Cleaning", "#2196F3", "sparkles", true),
-            ("Electronics", "#9C27B0", "bolt.fill", true),
-            ("Clothing", "#FF9800", "tshirt.fill", true),
-            ("Household", "#795548", "house.fill", true)
-        ]
-
-        for item in defaults {
-            let category = ProductCategory(context: viewContext)
-            category.id = UUID()
-            category.name = item.name
-            category.colorHex = item.color
-            category.iconName = item.icon
-            category.isTaxable = item.taxable
-        }
-
-        PersistenceController.shared.save()
-    }
 
     private func deleteCategory(_ category: ProductCategory) {
         withAnimation {

@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: ShoppingListDetailView.swift
+//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
+//  Editors:
+//    - Renan Yoshida Avelan (101536279): reviewed header compliance and report navigation notes.
+//    - Gustavo Miranda (101488574): reviewed header compliance and item CRUD integration notes.
+//  External/AI References: NOT USED
+//  Description: Detailed list view with item CRUD, totals, budget tracking, and tax breakdown reporting.
+//
+
+//
 //  ShoppingListDetailView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -16,6 +27,11 @@ import CoreData
 /// ShoppingListDetailView displays items in a shopping list with tax calculations
 struct ShoppingListDetailView: View {
     @Environment(\.managedObjectContext) private var viewContext
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \ProductCategory.name, ascending: true)],
+        animation: .default)
+    private var categories: FetchedResults<ProductCategory>
 
     @ObservedObject var list: ShoppingList
 
@@ -44,6 +60,13 @@ struct ShoppingListDetailView: View {
         .navigationTitle(list.name ?? "Shopping List")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                NavigationLink {
+                    TaxBreakdownReportView(list: list)
+                } label: {
+                    Label("Tax Report", systemImage: "doc.text.magnifyingglass")
+                }
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     showingAddItem = true
@@ -156,7 +179,11 @@ struct ShoppingListDetailView: View {
             ForEach(groupedItems.keys.sorted(), id: \.self) { category in
                 Section(header: Text(category)) {
                     ForEach(groupedItems[category] ?? []) { item in
-                        ShoppingItemRowView(item: item, taxCalculator: taxCalculator)
+                        ShoppingItemRowView(
+                            item: item,
+                            taxCalculator: taxCalculator,
+                            isTaxable: isCategoryTaxable(item.categoryName)
+                        )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 selectedItem = item
@@ -216,10 +243,10 @@ struct ShoppingListDetailView: View {
     // MARK: - Helper Methods
 
     private func isCategoryTaxable(_ categoryName: String?) -> Bool {
-        guard let name = categoryName else { return true }
-        // Food and medication are typically tax-exempt in Canada
-        let exemptCategories = ["Food", "Medication", "Basic Groceries", "Prescription Medication"]
-        return !exemptCategories.contains(name)
+        CategoryDefaults.isTaxable(
+            categoryName: categoryName,
+            categories: Array(categories)
+        )
     }
 
     private func togglePurchased(_ item: ShoppingItem) {
@@ -241,6 +268,7 @@ struct ShoppingListDetailView: View {
 struct ShoppingItemRowView: View {
     @ObservedObject var item: ShoppingItem
     let taxCalculator: TaxCalculator
+    let isTaxable: Bool
 
     var body: some View {
         HStack(spacing: 12) {
@@ -288,12 +316,222 @@ struct ShoppingItemRowView: View {
         .padding(.vertical, 4)
         .opacity(item.isPurchased ? 0.7 : 1.0)
     }
+}
 
-    private var isTaxable: Bool {
-        guard let category = item.categoryName else { return true }
-        let exemptCategories = ["Food", "Medication", "Basic Groceries", "Prescription Medication"]
-        return !exemptCategories.contains(category)
+struct TaxBreakdownReportView: View {
+    @ObservedObject var list: ShoppingList
+
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \ProductCategory.name, ascending: true)],
+        animation: .default
+    )
+    private var categories: FetchedResults<ProductCategory>
+
+    @AppStorage("selectedProvince") private var selectedProvince = "Ontario"
+    @State private var comparisonProvince = TaxCalculator.Province.alberta.rawValue
+
+    private var items: [ShoppingItem] {
+        (list.items?.allObjects as? [ShoppingItem]) ?? []
     }
+
+    private var currentProvince: TaxCalculator.Province {
+        TaxCalculator.Province(rawValue: selectedProvince) ?? .ontario
+    }
+
+    private var compareProvince: TaxCalculator.Province {
+        TaxCalculator.Province(rawValue: comparisonProvince) ?? .alberta
+    }
+
+    private var currentCalculator: TaxCalculator {
+        TaxCalculator(province: currentProvince)
+    }
+
+    private var compareCalculator: TaxCalculator {
+        TaxCalculator(province: compareProvince)
+    }
+
+    private var taxableSubtotal: Double {
+        items
+            .filter { isCategoryTaxable($0.categoryName) }
+            .reduce(0) { $0 + ($1.price * Double($1.quantity)) }
+    }
+
+    private var taxExemptSubtotal: Double {
+        items
+            .filter { !isCategoryTaxable($0.categoryName) }
+            .reduce(0) { $0 + ($1.price * Double($1.quantity)) }
+    }
+
+    private var currentTax: Double {
+        currentCalculator.calculateTax(subtotal: taxableSubtotal, isTaxable: true)
+    }
+
+    private var currentTotal: Double {
+        taxableSubtotal + taxExemptSubtotal + currentTax
+    }
+
+    private var taxSavedFromExemptItems: Double {
+        currentCalculator.calculateTax(subtotal: taxExemptSubtotal, isTaxable: true)
+    }
+
+    private var compareTax: Double {
+        compareCalculator.calculateTax(subtotal: taxableSubtotal, isTaxable: true)
+    }
+
+    private var compareTotal: Double {
+        taxableSubtotal + taxExemptSubtotal + compareTax
+    }
+
+    private var totalDifference: Double {
+        compareTotal - currentTotal
+    }
+
+    private var categoryRows: [CategoryTaxRowData] {
+        // Build per-category subtotals and tax rows so the report reflects taxable vs exempt groups.
+        let grouped = Dictionary(grouping: items) { item in
+            let name = item.categoryName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return name.isEmpty ? "Uncategorized" : name
+        }
+
+        return grouped
+            .map { key, values in
+                let subtotal = values.reduce(0) { $0 + ($1.price * Double($1.quantity)) }
+                let taxable = isCategoryTaxable(key)
+                let tax = currentCalculator.calculateTax(subtotal: subtotal, isTaxable: taxable)
+                return CategoryTaxRowData(
+                    categoryName: key,
+                    subtotal: subtotal,
+                    isTaxable: taxable,
+                    taxAmount: tax
+                )
+            }
+            .sorted { $0.categoryName < $1.categoryName }
+    }
+
+    var body: some View {
+        List {
+            if items.isEmpty {
+                Section {
+                    VStack(spacing: 10) {
+                        Image(systemName: "cart")
+                            .font(.system(size: 36))
+                            .foregroundColor(.secondary)
+                        Text("No Items In This List")
+                            .font(.headline)
+                        Text("Add items to generate a tax breakdown report.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+                }
+            } else {
+                Section("Overview") {
+                    LabeledContent("Province") {
+                        Text(currentProvince.rawValue)
+                    }
+                    LabeledContent("Tax Rule") {
+                        Text(currentProvince.taxDescription)
+                    }
+                    LabeledContent("Taxable Subtotal") {
+                        Text(TaxCalculator.formatPrice(taxableSubtotal))
+                    }
+                    LabeledContent("Tax-Exempt Subtotal") {
+                        Text(TaxCalculator.formatPrice(taxExemptSubtotal))
+                    }
+                    LabeledContent("Tax Amount") {
+                        Text(TaxCalculator.formatPrice(currentTax))
+                            .foregroundColor(.orange)
+                    }
+                    LabeledContent("Grand Total") {
+                        Text(TaxCalculator.formatPrice(currentTotal))
+                            .fontWeight(.semibold)
+                    }
+                    LabeledContent("Tax Saved (Exempt)") {
+                        Text(TaxCalculator.formatPrice(taxSavedFromExemptItems))
+                            .foregroundColor(.green)
+                    }
+                }
+
+                Section("By Category") {
+                    ForEach(categoryRows) { row in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(row.categoryName)
+                                    .font(.headline)
+                                Spacer()
+                                Text(row.isTaxable ? "Taxable" : "Tax-Exempt")
+                                    .font(.caption)
+                                    .foregroundColor(row.isTaxable ? .orange : .green)
+                            }
+
+                            HStack {
+                                Text("Subtotal")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(TaxCalculator.formatPrice(row.subtotal))
+                                    .font(.caption)
+                            }
+
+                            HStack {
+                                Text("Tax")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(TaxCalculator.formatPrice(row.taxAmount))
+                                    .font(.caption)
+                                    .foregroundColor(.orange)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                Section("Province Comparison") {
+                    Picker("Compare With", selection: $comparisonProvince) {
+                        ForEach(TaxCalculator.Province.allCases) { province in
+                            Text(province.rawValue).tag(province.rawValue)
+                        }
+                    }
+                    .pickerStyle(.menu)
+
+                    LabeledContent("Current Total (\(currentProvince.rawValue))") {
+                        Text(TaxCalculator.formatPrice(currentTotal))
+                    }
+                    LabeledContent("Compared Total (\(compareProvince.rawValue))") {
+                        Text(TaxCalculator.formatPrice(compareTotal))
+                    }
+                    LabeledContent("Difference") {
+                        Text(
+                            totalDifference >= 0
+                                ? "+\(TaxCalculator.formatPrice(totalDifference))"
+                                : "-\(TaxCalculator.formatPrice(abs(totalDifference)))"
+                        )
+                        .foregroundColor(totalDifference >= 0 ? .orange : .green)
+                    }
+                }
+            }
+        }
+        .navigationTitle("Tax Breakdown")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func isCategoryTaxable(_ categoryName: String?) -> Bool {
+        CategoryDefaults.isTaxable(
+            categoryName: categoryName,
+            categories: Array(categories)
+        )
+    }
+}
+
+struct CategoryTaxRowData: Identifiable {
+    let id = UUID()
+    let categoryName: String
+    let subtotal: Double
+    let isTaxable: Bool
+    let taxAmount: Double
 }
 
 #Preview {
