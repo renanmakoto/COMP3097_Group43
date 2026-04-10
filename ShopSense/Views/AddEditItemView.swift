@@ -34,6 +34,7 @@ struct AddEditItemView: View {
     @State private var notes = ""
 
     @State private var showingValidationAlert = false
+    @State private var validationMessage = "Please enter an item name."
 
     private var isEditMode: Bool { item != nil }
 
@@ -126,7 +127,7 @@ struct AddEditItemView: View {
             .alert("Validation Error", isPresented: $showingValidationAlert) {
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("Please enter an item name.")
+                Text(validationMessage)
             }
             .onAppear {
                 loadItemData()
@@ -156,6 +157,19 @@ struct AddEditItemView: View {
     private func saveItem() {
         let trimmedName = name.trimmingCharacters(in: .whitespaces)
         guard !trimmedName.isEmpty else {
+            validationMessage = "Please enter an item name."
+            showingValidationAlert = true
+            return
+        }
+
+        guard price >= 0 else {
+            validationMessage = "Price cannot be negative."
+            showingValidationAlert = true
+            return
+        }
+
+        guard quantity > 0 else {
+            validationMessage = "Quantity must be at least 1."
             showingValidationAlert = true
             return
         }

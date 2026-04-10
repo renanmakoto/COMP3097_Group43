@@ -7,7 +7,7 @@
 //
 //
 //  Description: Settings screen for app preferences and information.
-//  Includes province selection, display options, and app information.
+//  Includes province selection, data reset, and app information.
 //
 
 import SwiftUI
@@ -16,8 +16,6 @@ import CoreData
 /// SettingsView provides app settings and information
 struct SettingsView: View {
     @AppStorage("selectedProvince") private var selectedProvince = "Ontario"
-    @AppStorage("showPurchasedItems") private var showPurchasedItems = true
-    @AppStorage("defaultBudget") private var defaultBudget: Double = 0
 
     @State private var showingResetAlert = false
     @State private var showingAboutSheet = false
@@ -42,25 +40,8 @@ struct SettingsView: View {
                     }
                 }
 
-                // Display Settings
-                Section("Display") {
-                    Toggle("Show Purchased Items", isOn: $showPurchasedItems)
-
-                    HStack {
-                        Text("Default Budget")
-                        Spacer()
-                        TextField("0", value: $defaultBudget, format: .currency(code: "CAD"))
-                            .multilineTextAlignment(.trailing)
-                            .keyboardType(.decimalPad)
-                    }
-                }
-
                 // Data Section
                 Section("Data") {
-                    Button("Export All Lists") {
-                        exportLists()
-                    }
-
                     Button("Reset All Data", role: .destructive) {
                         showingResetAlert = true
                     }
@@ -123,11 +104,6 @@ struct SettingsView: View {
                 AboutView()
             }
         }
-    }
-
-    private func exportLists() {
-        // Placeholder for export functionality
-        print("Export lists functionality")
     }
 
     private func resetAllData() {
