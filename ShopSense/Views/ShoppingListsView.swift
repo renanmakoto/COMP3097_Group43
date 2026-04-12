@@ -337,7 +337,7 @@ enum ListTemplateStore {
     private static let storageKey = "shopsense.list.templates.v1"
 
     static func load() -> [ListTemplate] {
-        // Decode template JSON from UserDefaults; return empty if data is missing or incompatible.
+
         guard
             let data = UserDefaults.standard.data(forKey: storageKey),
             let templates = try? JSONDecoder().decode([ListTemplate].self, from: data)
@@ -348,7 +348,7 @@ enum ListTemplateStore {
     }
 
     static func save(_ templates: [ListTemplate]) {
-        // Encode templates as JSON for stable local persistence across launches.
+
         guard let data = try? JSONEncoder().encode(templates) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
     }

@@ -130,9 +130,54 @@ struct CategoriesView: View {
     // MARK: - Methods
 
     private func deleteCategory(_ category: ProductCategory) {
+        let deletedName = (category.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+
         withAnimation {
+            _ = ensureUncategorizedExists(excluding: category)
+            if !deletedName.isEmpty {
+                _ = reassignItems(from: deletedName, to: "Uncategorized")
+            }
+
             viewContext.delete(category)
             PersistenceController.shared.save()
+        }
+    }
+
+    private func ensureUncategorizedExists(excluding categoryBeingDeleted: ProductCategory?) -> ProductCategory {
+        let request: NSFetchRequest<ProductCategory> = ProductCategory.fetchRequest()
+        request.predicate = NSPredicate(format: "name =[c] %@", "Uncategorized")
+
+        do {
+            let matches = try viewContext.fetch(request)
+            if let existing = matches.first(where: { $0.objectID != categoryBeingDeleted?.objectID }) {
+                return existing
+            }
+        } catch {
+            print("Error checking Uncategorized category: \(error)")
+        }
+
+        let fallback = ProductCategory(context: viewContext)
+        fallback.id = UUID()
+        fallback.name = "Uncategorized"
+        fallback.colorHex = "#9E9E9E"
+        fallback.iconName = "tray.fill"
+        fallback.isTaxable = true
+        return fallback
+    }
+
+    private func reassignItems(from sourceCategory: String, to targetCategory: String) -> Int {
+        let request: NSFetchRequest<ShoppingItem> = ShoppingItem.fetchRequest()
+        request.predicate = NSPredicate(format: "categoryName == %@", sourceCategory)
+
+        do {
+            let items = try viewContext.fetch(request)
+            for item in items {
+                item.categoryName = targetCategory
+            }
+            return items.count
+        } catch {
+            print("Error reassigning items for deleted category: \(error)")
+            return 0
         }
     }
 }
@@ -181,6 +226,8 @@ struct AddEditCategoryView: View {
     @State private var selectedColor = "#4CAF50"
     @State private var selectedIcon = "folder.fill"
     @State private var isTaxable = true
+    @State private var originalName = ""
+    @State private var activeAlert: CategoryAlert?
 
     private var isEditMode: Bool { category != nil }
 
@@ -276,32 +323,111 @@ struct AddEditCategoryView: View {
             .onAppear {
                 loadCategoryData()
             }
+            .alert(item: $activeAlert) { alert in
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK")) {
+                        if alert.dismissAfterAcknowledgement {
+                            dismiss()
+                        }
+                    }
+                )
+            }
         }
     }
 
     private func loadCategoryData() {
         guard let category = category else { return }
         name = category.name ?? ""
+        originalName = category.name ?? ""
         selectedColor = category.colorHex ?? "#4CAF50"
         selectedIcon = category.iconName ?? "folder.fill"
         isTaxable = category.isTaxable
     }
 
     private func saveCategory() {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        if hasDuplicateCategoryName(trimmedName) {
+            activeAlert = CategoryAlert(
+                title: "Duplicate Category Name",
+                message: "A category named \"\(trimmedName)\" already exists. Please choose a different name.",
+                dismissAfterAcknowledgement: false
+            )
+            return
+        }
+
         let categoryToSave = category ?? ProductCategory(context: viewContext)
 
         if category == nil {
             categoryToSave.id = UUID()
         }
 
-        categoryToSave.name = name.trimmingCharacters(in: .whitespaces)
+        let previousName = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
+        categoryToSave.name = trimmedName
         categoryToSave.colorHex = selectedColor
         categoryToSave.iconName = selectedIcon
         categoryToSave.isTaxable = isTaxable
 
+        // Keep item-category linkage stable when a category name changes.
+        var renamedItemCount = 0
+        if isEditMode && !previousName.isEmpty && previousName != trimmedName {
+            renamedItemCount = migrateItemCategoryNames(from: previousName, to: trimmedName)
+        }
+
         PersistenceController.shared.save()
-        dismiss()
+
+        if renamedItemCount > 0 {
+            activeAlert = CategoryAlert(
+                title: "Items Updated",
+                message: "\(renamedItemCount) item\(renamedItemCount == 1 ? " was" : "s were") updated to \"\(trimmedName)\".",
+                dismissAfterAcknowledgement: true
+            )
+        } else {
+            dismiss()
+        }
     }
+
+    private func hasDuplicateCategoryName(_ candidateName: String) -> Bool {
+        let request: NSFetchRequest<ProductCategory> = ProductCategory.fetchRequest()
+        request.predicate = NSPredicate(format: "name =[c] %@", candidateName)
+
+        do {
+            let matches = try viewContext.fetch(request)
+            if let category {
+                return matches.contains { $0.objectID != category.objectID }
+            }
+            return !matches.isEmpty
+        } catch {
+            print("Error validating duplicate category names: \(error)")
+            return false
+        }
+    }
+
+    private func migrateItemCategoryNames(from oldName: String, to newName: String) -> Int {
+        let request: NSFetchRequest<ShoppingItem> = ShoppingItem.fetchRequest()
+        request.predicate = NSPredicate(format: "categoryName == %@", oldName)
+
+        do {
+            let items = try viewContext.fetch(request)
+            for item in items {
+                item.categoryName = newName
+            }
+            return items.count
+        } catch {
+            print("Error updating item categories after rename: \(error)")
+            return 0
+        }
+    }
+}
+
+private struct CategoryAlert: Identifiable {
+    let id = UUID()
+    let title: String
+    let message: String
+    let dismissAfterAcknowledgement: Bool
 }
 
 #Preview {
