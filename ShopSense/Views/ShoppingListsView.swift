@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: ShoppingListsView.swift
-//  Author: Gustavo Miranda (101488574, CRN: 54621)
-//  Editors:
-//    - Renan Yoshida Avelan (101536279): reviewed header compliance and navigation flow notes.
-//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and tax-impact data notes.
-//  External/AI References: NOT USED
-//  Description: Shopping list hub with list CRUD plus template creation, editing, and apply flows.
-//
-
-//
 //  ShoppingListsView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -37,6 +26,8 @@ struct ShoppingListsView: View {
     @State private var showingAddList = false
     @State private var selectedList: ShoppingList?
     @State private var showingTemplates = false
+    @State private var showingTemplateAppliedAlert = false
+    @State private var templateAppliedMessage = ""
 
     var body: some View {
         NavigationStack {
@@ -75,6 +66,11 @@ struct ShoppingListsView: View {
                 ListTemplateManagerView { template in
                     createListFromTemplate(template)
                 }
+            }
+            .alert("Template Applied", isPresented: $showingTemplateAppliedAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(templateAppliedMessage)
             }
         }
     }
@@ -133,10 +129,12 @@ struct ShoppingListsView: View {
     }
 
     private func createListFromTemplate(_ template: ListTemplate) {
+        let cleanedTemplateName = template.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
         let newList = ShoppingList(context: viewContext)
         newList.id = UUID()
         newList.createdAt = Date()
-        newList.name = template.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        newList.name = cleanedTemplateName
         newList.budget = max(0, template.budget)
 
         for templateItem in template.items {
@@ -150,7 +148,12 @@ struct ShoppingListsView: View {
             item.isPurchased = false
         }
 
-        PersistenceController.shared.save()
+        withAnimation {
+            PersistenceController.shared.save()
+        }
+
+        templateAppliedMessage = "List created from template: \(cleanedTemplateName)"
+        showingTemplateAppliedAlert = true
     }
 }
 
@@ -334,21 +337,33 @@ struct ListTemplateItem: Identifiable, Codable, Equatable {
 }
 
 enum ListTemplateStore {
+    struct LoadResult {
+        let templates: [ListTemplate]
+        let didResetCorruptData: Bool
+    }
+
     private static let storageKey = "shopsense.list.templates.v1"
+    private static let corruptBackupKey = "shopsense.list.templates.v1.corrupt.backup"
+
+    static func loadWithRecovery() -> LoadResult {
+        guard let data = UserDefaults.standard.data(forKey: storageKey) else {
+            return LoadResult(templates: [], didResetCorruptData: false)
+        }
+
+        if let templates = try? JSONDecoder().decode([ListTemplate].self, from: data) {
+            return LoadResult(templates: templates, didResetCorruptData: false)
+        }
+
+        UserDefaults.standard.set(data, forKey: corruptBackupKey)
+        save([])
+        return LoadResult(templates: [], didResetCorruptData: true)
+    }
 
     static func load() -> [ListTemplate] {
-
-        guard
-            let data = UserDefaults.standard.data(forKey: storageKey),
-            let templates = try? JSONDecoder().decode([ListTemplate].self, from: data)
-        else {
-            return []
-        }
-        return templates
+        loadWithRecovery().templates
     }
 
     static func save(_ templates: [ListTemplate]) {
-
         guard let data = try? JSONEncoder().encode(templates) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
     }
@@ -359,7 +374,8 @@ struct ListTemplateManagerView: View {
 
     let onApplyTemplate: (ListTemplate) -> Void
 
-    @State private var templates: [ListTemplate] = ListTemplateStore.load()
+    @State private var templates: [ListTemplate] = []
+    @State private var showingTemplateLoadErrorAlert = false
     @State private var showingCreateTemplate = false
     @State private var editingTemplate: ListTemplate?
 
@@ -439,6 +455,14 @@ struct ListTemplateManagerView: View {
                     }
                 }
             }
+            .onAppear {
+                loadTemplates()
+            }
+            .alert("Template Data Error", isPresented: $showingTemplateLoadErrorAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Templates data could not be loaded. Templates will be reset.")
+            }
             .sheet(isPresented: $showingCreateTemplate) {
                 ListTemplateEditorView(template: nil) { created in
                     templates.append(created)
@@ -454,6 +478,12 @@ struct ListTemplateManagerView: View {
                 }
             }
         }
+    }
+
+    private func loadTemplates() {
+        let loadResult = ListTemplateStore.loadWithRecovery()
+        templates = loadResult.templates
+        showingTemplateLoadErrorAlert = loadResult.didResetCorruptData
     }
 
     private func deleteTemplate(_ template: ListTemplate) {

@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: PersistenceController.swift
-//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
-//  Editors:
-//    - Gustavo Miranda (101488574): reviewed header compliance and persistence notes.
-//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and default-category seeding notes.
-//  External/AI References: NOT USED
-//  Description: Core Data stack setup, save operations, and default category seeding.
-//
-
-//
 //  PersistenceController.swift
 //  ShopSense - Shopping List with Tax Calculator
 //

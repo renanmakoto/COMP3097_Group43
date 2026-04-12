@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: TaxCalculatorView.swift
-//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
-//  Editors:
-//    - Renan Yoshida Avelan (101536279): reviewed header compliance and province-setting linkage.
-//    - Gustavo Miranda (101488574): reviewed header compliance and calculator UX notes.
-//  External/AI References: NOT USED
-//  Description: Standalone calculator UI for province-based Canadian tax computation.
-//
-
-//
 //  TaxCalculatorView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //

@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: AddEditItemView.swift
-//  Author: Gustavo Miranda (101488574, CRN: 54621)
-//  Editors:
-//    - Renan Yoshida Avelan (101536279): reviewed header compliance and validation notes.
-//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and category-tax hint notes.
-//  External/AI References: NOT USED
-//  Description: Form for creating and updating list items with category, quantity, price, and notes.
-//
-
-//
 //  AddEditItemView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
