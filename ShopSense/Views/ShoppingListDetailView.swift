@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: ShoppingListDetailView.swift
+//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
+//  Editors:
+//    - Renan Yoshida Avelan (101536279): reviewed header compliance and report navigation notes.
+//    - Gustavo Miranda (101488574): reviewed header compliance and item CRUD integration notes.
+//  External/AI References: NOT USED
+//  Description: Detailed list view with item CRUD, totals, budget tracking, and tax breakdown reporting.
+//
+
+//
 //  ShoppingListDetailView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -376,6 +387,7 @@ struct TaxBreakdownReportView: View {
     }
 
     private var categoryRows: [CategoryTaxRowData] {
+        // Build per-category subtotals and tax rows so the report reflects taxable vs exempt groups.
         let grouped = Dictionary(grouping: items) { item in
             let name = item.categoryName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             return name.isEmpty ? "Uncategorized" : name

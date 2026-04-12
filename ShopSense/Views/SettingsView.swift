@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: SettingsView.swift
+//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
+//  Editors:
+//    - Gustavo Miranda (101488574): reviewed header compliance and reset-flow notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and province-setting/tax notes.
+//  External/AI References: NOT USED
+//  Description: Settings screen for province selection, data reset, and app/team information.
+//
+
+//
 //  SettingsView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -119,6 +130,7 @@ struct SettingsView: View {
         let categoryDelete = NSBatchDeleteRequest(fetchRequest: categoryRequest)
 
         do {
+            // Use batch deletes to wipe large Core Data tables efficiently before reseeding defaults.
             try context.execute(listDelete)
             try context.execute(itemDelete)
             try context.execute(categoryDelete)

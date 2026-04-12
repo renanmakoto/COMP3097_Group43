@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: ShoppingListsView.swift
+//  Author: Gustavo Miranda (101488574, CRN: 54621)
+//  Editors:
+//    - Renan Yoshida Avelan (101536279): reviewed header compliance and navigation flow notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and tax-impact data notes.
+//  External/AI References: NOT USED
+//  Description: Shopping list hub with list CRUD plus template creation, editing, and apply flows.
+//
+
+//
 //  ShoppingListsView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
@@ -326,6 +337,7 @@ enum ListTemplateStore {
     private static let storageKey = "shopsense.list.templates.v1"
 
     static func load() -> [ListTemplate] {
+
         guard
             let data = UserDefaults.standard.data(forKey: storageKey),
             let templates = try? JSONDecoder().decode([ListTemplate].self, from: data)
@@ -336,6 +348,7 @@ enum ListTemplateStore {
     }
 
     static func save(_ templates: [ListTemplate]) {
+
         guard let data = try? JSONEncoder().encode(templates) else { return }
         UserDefaults.standard.set(data, forKey: storageKey)
     }

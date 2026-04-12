@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: MainView.swift
+//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
+//  Editors:
+//    - Gustavo Miranda (101488574): reviewed header compliance and tab navigation notes.
+//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and dashboard/tax navigation notes.
+//  External/AI References: NOT USED
+//  Description: Main tab container that exposes dashboard, lists, categories, calculator, and settings.
+//
+
+//
 //  MainView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //

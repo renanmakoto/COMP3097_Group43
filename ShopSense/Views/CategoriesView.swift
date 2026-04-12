@@ -1,4 +1,15 @@
 //
+//  Internal Documentation Header (COMP3097 Final)
+//  File: CategoriesView.swift
+//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
+//  Editors:
+//    - Renan Yoshida Avelan (101536279): reviewed header compliance and category defaults notes.
+//    - Gustavo Miranda (101488574): reviewed header compliance and list-category integration notes.
+//  External/AI References: NOT USED
+//  Description: Category management for custom names, icons, colors, and taxable flags.
+//
+
+//
 //  CategoriesView.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
