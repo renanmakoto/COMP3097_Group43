@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: TaxCalculator.swift
-//  Author: Lucas Tavares Criscuolo (101500671, CRN: 54621)
-//  Editors:
-//    - Renan Yoshida Avelan (101536279): reviewed header compliance and app-wide tax model usage.
-//    - Gustavo Miranda (101488574): reviewed header compliance and list-total integration notes.
-//  External/AI References: NOT USED
-//  Description: Tax calculation utilities and province tax-rate definitions used across the app.
-//
-
-//
 //  TaxCalculator.swift
 //  ShopSense - Shopping List with Tax Calculator
 //

@@ -1,15 +1,4 @@
 //
-//  Internal Documentation Header (COMP3097 Final)
-//  File: ShopSenseApp.swift
-//  Author: Renan Yoshida Avelan (101536279, CRN: 54621)
-//  Editors:
-//    - Gustavo Miranda (101488574): reviewed header compliance and startup flow notes.
-//    - Lucas Tavares Criscuolo (101500671): reviewed header compliance and launch sequence notes.
-//  External/AI References: NOT USED
-//  Description: Main app entry point that wires Core Data and launch-to-main navigation.
-//
-
-//
 //  ShopSenseApp.swift
 //  ShopSense - Shopping List with Tax Calculator
 //
